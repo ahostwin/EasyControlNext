@@ -19,12 +19,9 @@ import android.sun.security.x509.X509CertInfo;
 
 import androidx.annotation.NonNull;
 
-import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
-import java.security.interfaces.RSAPrivateCrtKey;
-import java.security.spec.RSAPublicKeySpec;
 import java.util.Date;
 import java.util.Random;
 
@@ -41,7 +38,7 @@ public class AdbConnectionManager extends AbsAdbConnectionManager {
     private AdbConnectionManager(AdbKeyPair keyPair) throws Exception {
         setApi(Build.VERSION.SDK_INT);
         mPrivateKey = keyPair.privateKey;
-        PublicKey publicKey = convertPubFile(keyPair.privateKey);
+        PublicKey publicKey = keyPair.getPublicKey();
         // Generate a new certificate
         String subject = "CN=Easy Control Next";
         String algorithmName = "SHA512withRSA";
@@ -66,15 +63,6 @@ public class AdbConnectionManager extends AbsAdbConnectionManager {
         X509CertImpl x509CertImpl = new X509CertImpl(x509CertInfo);
         x509CertImpl.sign(mPrivateKey, algorithmName);
         mCertificate = x509CertImpl;
-    }
-
-    public static PublicKey convertPubFile(PrivateKey myPrivateKey) throws Exception {
-        RSAPrivateCrtKey privk = (RSAPrivateCrtKey)myPrivateKey;
-
-        RSAPublicKeySpec publicKeySpec = new java.security.spec.RSAPublicKeySpec(privk.getModulus(), privk.getPublicExponent());
-
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        return keyFactory.generatePublic(publicKeySpec);
     }
 
     @NonNull
