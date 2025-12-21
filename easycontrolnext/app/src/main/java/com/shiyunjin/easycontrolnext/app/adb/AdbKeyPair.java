@@ -146,7 +146,7 @@ public class AdbKeyPair {
     BigInteger modulus = new BigInteger(1, reverse(n));
     BigInteger publicExponent = BigInteger.valueOf(exp);
 
-    RSAPublicKeySpec publicKeySpec = new java.security.spec.RSAPublicKeySpec(modulus, publicExponent);
+    RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(modulus, publicExponent);
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
     return (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
