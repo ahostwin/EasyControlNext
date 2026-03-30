@@ -7,12 +7,14 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 
 import javax.crypto.Cipher;
 
@@ -32,6 +34,13 @@ public class AdbKeyPair {
     cipher.init(Cipher.ENCRYPT_MODE, privateKey);
     cipher.update(SIGNATURE_PADDING);
     return cipher.doFinal(payload.array());
+  }
+
+  public RSAPublicKey getPublicKey() throws Exception {
+    String publicKeyString = new String(publicKeyBytes, StandardCharsets.UTF_8).trim();
+    String publicKeyBase64 = publicKeyString.split(" ")[0];
+    byte[] publicKey = adbBase64.decode(publicKeyBase64.getBytes(StandardCharsets.UTF_8));
+    return convertRsaPublicKeyFromAdbFormat(publicKey);
   }
 
   public static void setAdbBase64(AdbBase64 adbBase64) {
@@ -113,6 +122,35 @@ public class AdbKeyPair {
     return bbuf.array();
   }
 
+  private static byte[] reverse(byte[] bytes) {
+    for (int i = 0, j = bytes.length - 1; i < j; i++, j--) {
+        byte temp = bytes[i];
+        bytes[i] = bytes[j];
+        bytes[j] = temp;
+    }
+
+    return bytes;
+  }
+
+  private static RSAPublicKey convertRsaPublicKeyFromAdbFormat(byte[] publicKey) throws Exception {
+    ByteBuffer bbuf = ByteBuffer.wrap(publicKey).order(ByteOrder.LITTLE_ENDIAN);
+
+    byte[] n = new byte[256];
+
+    bbuf.position(bbuf.position() + 4);   // skip key length
+    bbuf.position(bbuf.position() + 4);   // skip n0inv
+    bbuf.get(n);                          // read modulus
+    bbuf.position(bbuf.position() + 256); // skip rr
+    int exp = bbuf.getInt();              // read exponent
+
+    BigInteger modulus = new BigInteger(1, reverse(n));
+    BigInteger publicExponent = BigInteger.valueOf(exp);
+
+    RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(modulus, publicExponent);
+
+    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+    return (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
+  }
 
   private static final int KEY_LENGTH_BITS = 2048;
   private static final int KEY_LENGTH_BYTES = KEY_LENGTH_BITS / 8;
