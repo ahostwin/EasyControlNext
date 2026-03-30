@@ -10,6 +10,7 @@ import android.os.Build;
 import android.view.Display;
 import android.view.Surface;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -94,5 +95,13 @@ public final class DisplayManager {
     Method method = getCreateVirtualDisplayMethod();
 
     return (VirtualDisplay) method.invoke(null, name, width, height, displayIdToMirror, surface);
+  }
+
+  public VirtualDisplay createNewVirtualDisplay(String name, int width, int height, int dpi, Surface surface, int flags) throws Exception {
+    Constructor<android.hardware.display.DisplayManager> ctor = android.hardware.display.DisplayManager.class.getDeclaredConstructor(
+            Context.class);
+    ctor.setAccessible(true);
+    android.hardware.display.DisplayManager dm = ctor.newInstance(FakeContext.get());
+    return dm.createVirtualDisplay(name, width, height, dpi, surface, flags);
   }
 }
